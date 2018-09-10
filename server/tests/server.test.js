@@ -1,14 +1,17 @@
 const expect = require('expect');
 const request = require('supertest');
+const { ObjectID } = require('mongodb');
 
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
 
 const todos = [
     {
+        _id: new ObjectID(),
         text: "the todo 1"
     },
     {
+        _id: new ObjectID(),
         text: "the todo 2"
     }
 ];
@@ -31,6 +34,7 @@ describe('server tests', () => {
                 .send({ text })
                 .expect(200)
                 .expect((res) => {
+
                     expect(res.body.text).toBe(text);
                 }).end((err, res) => {
                     if (err) {
@@ -45,26 +49,23 @@ describe('server tests', () => {
                     });
                 });
         });
-    });
-
-
-    it('should not create a new todo ', (done) => {
-        var text = 'text to do test';
-        request(app)
-            .post('/todos')
-            .send({})
-            .expect(400)
-            .end((err, res) => {
-                if (err) {
-                    return done(err);
-                }
-                Todo.find().then((todos) => {
-                    expect(todos.length).toBe(2);
-                    done();
-                }).catch((err) => {
-                    done(err);
+        it('should not create a new todo ', (done) => {
+            request(app)
+                .post('/todos')
+                .send({})
+                .expect(400)
+                .end((err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    Todo.find().then((todos) => {
+                        expect(todos.length).toBe(2);
+                        done();
+                    }).catch((err) => {
+                        done(err);
+                    });
                 });
-            });
+        });
     });
 
     describe('get todos tests', () => {
@@ -73,9 +74,39 @@ describe('server tests', () => {
                 .get('/todos')
                 .expect(200)
                 .expect((res) => {
-                    expect(res.todos.length).toBe(2);
-                    expect(res.todos).toBe(todos);
-                }).end(()=>done());
+                    expect(res.body.todos.length).toBe(2);
+                }).end(done);
+        });
+    });
+    describe('get todos/:id test',()=>{
+        it('should get a specific todo ', (done) => {
+            var id =todos[0]._id.toHexString();
+            
+            request(app)
+                .get(`/todos/${id}`)
+                .expect(200)
+                .expect((res) => {
+
+                    expect(res.body.todo.text).toBe(todos[0].text);
+                }).end(done);
+        });
+        it('should not return 404 if todo not found ', (done) => {
+            var id = new ObjectID().toHexString();
+            request(app)
+                .get(`/todos/${id}`)
+                .expect(404)
+                .end(done);
+
+        });
+
+
+        it('should not return 404 for invalid id ', (done) => {
+            var id = 'invalidID';
+            request(app)
+                .get(`/todos/${id}`)
+                .expect(404)
+                .end(done);
+
         });
     });
 });
