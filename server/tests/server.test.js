@@ -4,27 +4,12 @@ const { ObjectID } = require('mongodb');
 
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
+const { User } = require('./../models/user');
 
-const todos = [
-    {
-        _id: new ObjectID(),
-        text: "the todo 1"
-    },
-    {
-        _id: new ObjectID(),
-        text: "the todo 2",
-        completedAt: 254212 
-    }
-];
+const { todos, populate, populateUsers, users } = require('./seed/seed');
 
-beforeEach((done) => {
-    Todo.deleteMany({}).then(() => {
-        Todo.insertMany(todos)
-            .then(() => {
-                done();
-            });
-    });
-});
+beforeEach(populateUsers);
+beforeEach(populate);
 
 // afterEach((done) => {
 //     Todo.deleteMany({}).then(() => {
@@ -41,7 +26,7 @@ describe('server tests', () => {
                 .send({ text })
                 .expect(200)
                 .expect((res) => {
-                    
+
                     expect(res.body.todo.text).toBe(text);
                 }).end((err, res) => {
                     if (err) {
@@ -129,13 +114,13 @@ describe('server tests', () => {
                     if (err)
                         return done(err);
                     Todo.findById(id)
-                    .then((todo)=>{
-                        expect(todo).toBeNull();
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    });
+                        .then((todo) => {
+                            expect(todo).toBeNull();
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
                 });
         });
         it('should return 404 if todo not found ', (done) => {
@@ -162,9 +147,9 @@ describe('server tests', () => {
         it('should update a specific todo ', (done) => {
             var id = todos[0]._id.toHexString();
 
-            var body ={
-                text : "this is the text updated",
-                completed:true
+            var body = {
+                text: "this is the text updated",
+                completed: true
             }
 
             request(app)
@@ -179,24 +164,24 @@ describe('server tests', () => {
                     if (err)
                         return done(err);
                     Todo.findById(id)
-                    .then((todo)=>{
-                        expect(todo.text).toBe(body.text);
-                        expect(todo.completed).toBe(true);
-                        expect(typeof todo.completedAt).toBe('number');
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    });
+                        .then((todo) => {
+                            expect(todo.text).toBe(body.text);
+                            expect(todo.completed).toBe(true);
+                            expect(typeof todo.completedAt).toBe('number');
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
                 });
         });
 
         it('should clear the completed value when completed is false ', (done) => {
             var id = todos[1]._id.toHexString();
 
-            var body ={
-                text : "this is the text updated 2",
-                completed:false
+            var body = {
+                text: "this is the text updated 2",
+                completed: false
             }
 
             request(app)
@@ -211,15 +196,15 @@ describe('server tests', () => {
                     if (err)
                         return done(err);
                     Todo.findById(id)
-                    .then((todo)=>{
-                        expect(todo.text).toBe(body.text);
-                        expect(todo.completed).toBe(false);
-                        expect(todo.completedAt).toBeNull();
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    });
+                        .then((todo) => {
+                            expect(todo.text).toBe(body.text);
+                            expect(todo.completed).toBe(false);
+                            expect(todo.completedAt).toBeNull();
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
                 });
         });
 
@@ -238,6 +223,103 @@ describe('server tests', () => {
                 .patch(`/todos/${id}`)
                 .expect(404)
                 .end(done);
+        });
+    });
+
+    describe('get users/me test', () => {
+        it('should return user if authenticated', (done) => {
+            request(app)
+                .get('/users/me')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body._id).toBe(users[0]._id.toHexString());
+                    expect(res.body.email).toBe(users[0].email)
+                })
+                .end(done);
+        });
+
+        it('should return 401 if not authenticated', (done) => {
+            request(app)
+                .get('/users/me')
+                .expect(401)
+                .expect({})
+                .end(done);
+        });
+
+    });
+    describe('post /users', () => {
+        it('should create user', (done) => {
+            var email = 'example@example.com';
+            var password = 'password123';
+
+            request(app)
+                .post('/users')
+                .send({ email, password })
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body._id).toBeDefined();
+                    expect(res.headers['x-auth']).toBeDefined();
+                    expect(res.body.email).toBe(email);
+                })
+                .end((err,res)=>{
+                    if(err){
+                        return done(err);
+                    }
+                    User.find({email})
+                    .then((users)=>{
+                        expect(users.length).toBe(1);
+                        expect(users[0].email).toBe(email);
+                        expect(users[0].password).not.toBe(password);
+                        done();
+                    })
+                    .catch((err)=>{
+                        done(err);
+                    });
+                });
+
+        });
+        it('should return validation error when request not valid',(done)=>{
+            var email = 'example';
+            var password = 'password123';
+            request(app)
+                .post('/users')
+                .send({ email, password })
+                .expect(400)
+                .end((err,res)=>{
+                    if(err){
+                        return done(err);
+                    }
+                    User.find()
+                    .then((users)=>{
+                        expect(users.length).toBe(2);
+                        done();
+                    })
+                    .catch((err)=>{
+                        done(err);
+                    });
+                });
+        });
+        it('should return error if email already used',(done)=>{
+            var email = users[0].email;
+            var password = 'password123';
+            request(app)
+                .post('/users')
+                .send({ email, password })
+                .expect(400)
+                .end((err,res)=>{
+                    if(err){
+                        return done(err);
+                    }
+                    User.find()
+                    .then((users)=>{
+                        expect(users.length).toBe(2);
+                        done();
+                    })
+                    .catch((err)=>{
+                        done(err);
+                    });
+                });
         });
     });
 
