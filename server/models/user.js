@@ -45,7 +45,7 @@ userSchema.methods.generateAuthToken = function () {
 
     var access = 'auth';
 
-    var token = jwt.sign({ _id: user._id.toHexString(), access }, 'the secrete').toString();
+    var token = jwt.sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET).toString();
 
     user.tokens = user.tokens.concat([{ access, token }]);
 
@@ -56,10 +56,10 @@ userSchema.methods.generateAuthToken = function () {
 
 userSchema.methods.removeAuthToken = function (token) {
     var user = this;
-    
+
     return user.updateOne({
-        $pull : {
-            tokens : {token}
+        $pull: {
+            tokens: { token }
         }
     })
 }
@@ -68,7 +68,7 @@ userSchema.statics.findByToken = function (token) {
     var User = this;
     var decoded;
     try {
-        decoded = jwt.verify(token, 'the secrete');
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
         return Promise.reject();
     }
@@ -88,7 +88,7 @@ userSchema.statics.findByCredentials = function (email, password) {
             if (!user) {
                 return Promise.reject();
             }
-            return new Promise((resolve, reject) => { 
+            return new Promise((resolve, reject) => {
                 bcrypt.compare(password, user.password, (err, success) => {
                     if (err) {
                         return reject(err);
@@ -98,11 +98,11 @@ userSchema.statics.findByCredentials = function (email, password) {
                     } else {
                         reject();
                     }
-    
+
                 })
             });
         })
-        .catch((err)=>{
+        .catch((err) => {
             return Promise.reject();
         })
 

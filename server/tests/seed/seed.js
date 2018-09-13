@@ -3,17 +3,6 @@ const { User } = require('./../../models/user');
 const { ObjectID } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
-var todos = [
-    {
-        _id: new ObjectID(),
-        text: "the todo 1"
-    },
-    {
-        _id: new ObjectID(),
-        text: "the todo 2",
-        completedAt: 254212
-    }
-];
 
 const userOneId = new ObjectID();
 const userTwoId = new ObjectID();
@@ -25,16 +14,36 @@ var users = [
         tokens: [
             {
                 access: 'auth',
-                token: jwt.sign({ _id: userOneId, access: 'auth' }, 'the secrete').toString()
+                token: jwt.sign({ _id: userOneId, access: 'auth' }, process.env.JWT_SECRET).toString()
             }
         ]
     },
     {
         _id:userTwoId,
         email: 'email2@gmail.com',
-        password: 'thepass2'
+        password: 'thepass2',
+        tokens: [
+            {
+                access: 'auth',
+                token: jwt.sign({ _id: userTwoId, access: 'auth' }, process.env.JWT_SECRET).toString()
+            }
+        ]
     }
-]
+];
+var todos = [
+    {
+        _id: new ObjectID(),
+        text: "the todo 1",
+        _creator:userOneId
+    },
+    {
+        _id: new ObjectID(),
+        text: "the todo 2",
+        completedAt: 254212,
+        _creator:userTwoId
+    }
+];
+
 
 const populate = (done) => {
     Todo.deleteMany({}).then(() => {

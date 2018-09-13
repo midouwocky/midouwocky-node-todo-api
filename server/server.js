@@ -15,9 +15,10 @@ var port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
     var todo = Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
     todo.save()
         .then((todo) => {
@@ -29,8 +30,8 @@ app.post('/todos', (req, res) => {
 
 });
 
-app.get('/todos', (req, res) => {
-    Todo.find()
+app.get('/todos', authenticate, (req, res) => {
+    Todo.find({ _creator: req.user._id })
         .then((todos) => {
             res.send({ todos });
         })
@@ -40,13 +41,16 @@ app.get('/todos', (req, res) => {
         });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         res.status(404).send();
     }
     Todo.findById(id)
         .then((todo) => {
+            if (todo._creator.toHexString() !== req.user._id.toHexString()) {
+                return res.status(401).send();
+            }
             if (todo) {
                 res.send({ todo });
             } else {
@@ -59,13 +63,16 @@ app.get('/todos/:id', (req, res) => {
 
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         res.status(404).send();
     }
     Todo.findByIdAndDelete(id)
         .then((todo) => {
+            if (todo._creator.toHexString() !== req.user._id.toHexString()) {
+                return res.status(401).send();
+            }
             if (todo) {
                 res.send({ todo });
             } else {
@@ -78,7 +85,7 @@ app.delete('/todos/:id', (req, res) => {
 
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id',authenticate, (req, res) => {
     var id = req.params.id;
     var body = _.pick(req.body, ['text', 'completed']);
 
@@ -95,6 +102,9 @@ app.patch('/todos/:id', (req, res) => {
 
     Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
         .then((todo) => {
+            if(todo._creator.toHexString()!==req.user._id.toHexString()){
+                return res.status(401).send();
+            }
             if (todo) {
                 res.send({ todo });
             } else {
@@ -113,13 +123,13 @@ app.post('/users', (req, res) => {
     user.save()
         .then(() => {
             return user.generateAuthToken()
-            .then((token) => {
-                res.status(200).header('x-auth', token).send(user);
-            });
+                .then((token) => {
+                    res.status(200).header('x-auth', token).send(user);
+                });
         })
         .catch((err) => {
             res.status(400).send(err);
-        }) ;
+        });
 
 });
 
@@ -135,9 +145,9 @@ app.post('/users/login', (req, res) => {
     User.findByCredentials(email, password)
         .then((user) => {
             return user.generateAuthToken()
-            .then((token) => {
-                res.status(200).header('x-auth', token).send(user);
-            });
+                .then((token) => {
+                    res.status(200).header('x-auth', token).send(user);
+                });
         })
         .catch((err) => {
             res
@@ -148,15 +158,15 @@ app.post('/users/login', (req, res) => {
 
 });
 
-app.delete('/users/me/token', authenticate,(req, res) => {
+app.delete('/users/me/token', authenticate, (req, res) => {
     var token = req.headers['x-auth'];
     req.user.removeAuthToken(token)
-    .then(()=>{
-        res.status(200).send();
-    })
-    .catch((err)=>{
-        res.status(400).send(err);
-    });
+        .then(() => {
+            res.status(200).send();
+        })
+        .catch((err) => {
+            res.status(400).send(err);
+        });
 });
 
 app.listen(port, () => {
