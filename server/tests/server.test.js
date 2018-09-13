@@ -262,63 +262,123 @@ describe('server tests', () => {
                     expect(res.headers['x-auth']).toBeDefined();
                     expect(res.body.email).toBe(email);
                 })
-                .end((err,res)=>{
-                    if(err){
+                .end((err, res) => {
+                    if (err) {
                         return done(err);
                     }
-                    User.find({email})
-                    .then((users)=>{
-                        expect(users.length).toBe(1);
-                        expect(users[0].email).toBe(email);
-                        expect(users[0].password).not.toBe(password);
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    });
+                    User.find({ email })
+                        .then((users) => {
+                            expect(users.length).toBe(1);
+                            expect(users[0].email).toBe(email);
+                            expect(users[0].password).not.toBe(password);
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
                 });
 
         });
-        it('should return validation error when request not valid',(done)=>{
+        it('should return validation error when request not valid', (done) => {
             var email = 'example';
             var password = 'password123';
             request(app)
                 .post('/users')
                 .send({ email, password })
                 .expect(400)
-                .end((err,res)=>{
-                    if(err){
+                .end((err, res) => {
+                    if (err) {
                         return done(err);
                     }
                     User.find()
-                    .then((users)=>{
-                        expect(users.length).toBe(2);
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    });
+                        .then((users) => {
+                            expect(users.length).toBe(2);
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
                 });
         });
-        it('should return error if email already used',(done)=>{
+        it('should return error if email already used', (done) => {
             var email = users[0].email;
             var password = 'password123';
             request(app)
                 .post('/users')
                 .send({ email, password })
                 .expect(400)
+                .end((err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    User.find()
+                        .then((users) => {
+                            expect(users.length).toBe(2);
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        });
+                });
+        });
+    });
+
+    describe('should return an error if credentials are wrong', () => {
+
+        it('Post /users/login test', (done) => {
+            var email = users[1].email;
+            var password = users[1].password;
+
+            request(app)
+                .post('/users/login')
+                .send({ email, password })
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body._id).toBeDefined();
+                    expect(res.headers['x-auth']).toBeDefined();
+                    expect(res.body.email).toBe(email);
+                })
                 .end((err,res)=>{
                     if(err){
                         return done(err);
                     }
-                    User.find()
-                    .then((users)=>{
-                        expect(users.length).toBe(2);
+                    User.findById(users[1]._id)
+                    .then((user)=>{
+                        expect(user.tokens[0]).toMatchObject({
+                            access:'auth',
+                            token:res.headers['x-auth']
+                        });
                         done();
                     })
                     .catch((err)=>{
                         done(err);
-                    });
+                    })
+                });
+        });
+        it('should login user and return token', (done) => {
+
+            var email = 'try@gmail.com';
+            var password = 'falsePass123';
+
+            request(app)
+                .post('/users/login')
+                .send({ email, password })
+                .expect(400)
+                .expect((res) => {
+                    expect(res.headers['x-auth']).toBeUndefined();
+                })
+                .end((err,res)=>{
+                    if(err){
+                        return done(err);
+                    }
+                    User.findById(users[1]._id)
+                    .then((user)=>{
+                        expect(user.tokens.length).toBe(0);
+                        done();
+                    })
+                    .catch((err)=>{
+                        done(err);
+                    })
                 });
         });
     });

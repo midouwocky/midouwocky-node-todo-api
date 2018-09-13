@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
 const _ = require('lodash');
+var bcrypt = require('bcryptjs');;
 
 var { Todo } = require('./models/todo');
 var { User } = require('./models/user');
@@ -111,10 +112,10 @@ app.post('/users', (req, res) => {
     var user = User(body);
     user.save()
         .then(() => {
-            return user.generateAuthToken();
-        })
-        .then((token) => {
-            res.status(200).header('x-auth', token).send(user);
+            return user.generateAuthToken()
+            .then((token) => {
+                res.status(200).header('x-auth', token).send(user);
+            });
         })
         .catch((err) => {
             res.status(400).send(err);
@@ -124,6 +125,27 @@ app.post('/users', (req, res) => {
 
 app.get('/users/me', authenticate, (req, res) => {
     res.send(req.user);
+});
+
+app.post('/users/login', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    var email = body.email;
+    var password = body.password;
+
+    User.findByCredentials(email, password)
+        .then((user) => {
+            return user.generateAuthToken()
+            .then((token) => {
+                res.status(200).header('x-auth', token).send(user);
+            });
+        })
+        .catch((err) => {
+            res
+                .status(400)
+                .send(err);
+
+        })
+
 });
 
 app.listen(port, () => {
