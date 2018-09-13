@@ -338,21 +338,21 @@ describe('server tests', () => {
                     expect(res.headers['x-auth']).toBeDefined();
                     expect(res.body.email).toBe(email);
                 })
-                .end((err,res)=>{
-                    if(err){
+                .end((err, res) => {
+                    if (err) {
                         return done(err);
                     }
                     User.findById(users[1]._id)
-                    .then((user)=>{
-                        expect(user.tokens[0]).toMatchObject({
-                            access:'auth',
-                            token:res.headers['x-auth']
-                        });
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    })
+                        .then((user) => {
+                            expect(user.tokens[0]).toMatchObject({
+                                access: 'auth',
+                                token: res.headers['x-auth']
+                            });
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        })
                 });
         });
         it('should login user and return token', (done) => {
@@ -367,18 +367,40 @@ describe('server tests', () => {
                 .expect((res) => {
                     expect(res.headers['x-auth']).toBeUndefined();
                 })
-                .end((err,res)=>{
-                    if(err){
+                .end((err, res) => {
+                    if (err) {
                         return done(err);
                     }
                     User.findById(users[1]._id)
-                    .then((user)=>{
-                        expect(user.tokens.length).toBe(0);
-                        done();
-                    })
-                    .catch((err)=>{
-                        done(err);
-                    })
+                        .then((user) => {
+                            expect(user.tokens.length).toBe(0);
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        })
+                });
+        });
+    });
+
+    describe('delete /users/me/token', () => {
+        it('should delete token from user', (done) => {
+            request(app)
+                .delete('/users/me/token')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .end((err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    User.findById(users[0]._id)
+                        .then((user) => {
+                            expect(user.tokens.length).toBe(0);
+                            done();
+                        })
+                        .catch((err) => {
+                            done(err);
+                        })
                 });
         });
     });

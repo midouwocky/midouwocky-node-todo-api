@@ -148,6 +148,17 @@ app.post('/users/login', (req, res) => {
 
 });
 
+app.delete('/users/me/token', authenticate,(req, res) => {
+    var token = req.headers['x-auth'];
+    req.user.removeAuthToken(token)
+    .then(()=>{
+        res.status(200).send();
+    })
+    .catch((err)=>{
+        res.status(400).send(err);
+    });
+});
+
 app.listen(port, () => {
     console.log(`started on port ${port}`);
 });
