@@ -1,11 +1,15 @@
 const { Todo } = require('./../../models/todo');
 const { User } = require('./../../models/user');
+const {Role} = require('./../../models/role')
 const { ObjectID } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
 
 const userOneId = new ObjectID();
 const userTwoId = new ObjectID();
+
+const roleUserId = new ObjectID();
+const roleAdminId = new ObjectID();
 var users = [
     {
         _id:userOneId,
@@ -15,6 +19,16 @@ var users = [
             {
                 access: 'auth',
                 token: jwt.sign({ _id: userOneId, access: 'auth' }, process.env.JWT_SECRET).toString()
+            }
+        ],
+        roles:[
+            {
+                _id : roleAdminId,
+                name:'ROLE_ADMIN'
+            },
+            {   
+                _id :roleUserId,
+                name:'ROLE_USER'
             }
         ]
     },
@@ -26,6 +40,12 @@ var users = [
             {
                 access: 'auth',
                 token: jwt.sign({ _id: userTwoId, access: 'auth' }, process.env.JWT_SECRET).toString()
+            }
+        ],
+        roles:[
+            {   
+                _id :roleUserId,
+                name:'ROLE_USER'
             }
         ]
     }

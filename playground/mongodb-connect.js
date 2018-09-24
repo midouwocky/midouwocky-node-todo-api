@@ -7,15 +7,6 @@ MongoClient.connect(url,{ useNewUrlParser: true }, function (err, client) {
         return console.log('unable to connect to server');
     };
     var db = client.db('TodoApp');
-    // db.collection('Todos').insertOne({
-    //     text: 'something else to do too',
-    //     completed: false
-    // }, (err, result) => {
-    //     if (err) {
-    //         return console.log('unable to insert todo ', err);
-    //     }
-    //     console.log(JSON.stringify(result.ops,undefined,3));
-    // });
 
     db.collection('Users').insertOne({
         name: 'salim',

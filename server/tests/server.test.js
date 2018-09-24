@@ -369,9 +369,9 @@ describe('server tests', () => {
         });
     });
 
-    describe('should return an error if credentials are wrong', () => {
+    describe('Post /users/login test', () => {
 
-        it('Post /users/login test', (done) => {
+        it('should return an error if credentials are wrong', (done) => {
             var email = users[1].email;
             var password = users[1].password;
 
@@ -448,6 +448,30 @@ describe('server tests', () => {
                             done(err);
                         })
                 });
+        });
+    });
+
+    describe('get /users', () => {
+        it('should return users list for admin', (done) => {
+            request(app)
+                .get('/users')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res)=>{
+                    expect(res.body.users).toBeTruthy();
+                    expect(res.body.users.length).toBe(2);
+                })
+                .end(done);
+        });
+        it('should return 401 for a non admin user', (done) => {
+            request(app)
+                .get('/users')
+                .set('x-auth', users[1].tokens[0].token)
+                .expect(401)
+                .expect((res)=>{
+                    expect(res.body.users).toBeFalsy();
+                })
+                .end(done);
         });
     });
 

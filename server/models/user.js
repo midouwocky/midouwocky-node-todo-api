@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 const bcrypt = require('bcryptjs');
 
+var {roleSchema}=require('./role')
+
 var userSchema = new Schema({
     email: {
         type: String,
@@ -22,6 +24,7 @@ var userSchema = new Schema({
         required: true,
         minlength: 6
     },
+    roles: [roleSchema],
     tokens: [{
         access: {
             type: String,
@@ -37,7 +40,7 @@ var userSchema = new Schema({
 userSchema.methods.toJSON = function () {
     var user = this;
     var userObject = user.toObject();
-    return _.pick(userObject, ['_id', 'email']);
+    return _.pick(userObject, ['email','roles']);
 }
 
 userSchema.methods.generateAuthToken = function () {
