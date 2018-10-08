@@ -3,7 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
 const _ = require('lodash');
-var bcrypt = require('bcryptjs');;
+const {statistics} = require('./utils/statistics');
+var bcrypt = require('bcryptjs');
 
 var { Todo } = require('./models/todo');
 var { User } = require('./models/user');
@@ -18,10 +19,29 @@ var port = process.env.PORT;
 app.use(bodyParser.json());
 var authenticateUser = authenticate('ROLE_USER');
 var authenticateADMIN = authenticate('ROLE_ADMIN');
+app.use(function (req, res, next) {
+
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'x-auth, X-Requested-With, content-type, date');
+
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+
+    // Pass to next layer of middleware
+    next();
+});
 
 app.post('/todos', authenticateUser, async (req, res) => {
     var todo = Todo({
         text: req.body.text,
+        category: req.body.category,
         _creator: req.user._id
     });
 
@@ -37,7 +57,14 @@ app.post('/todos', authenticateUser, async (req, res) => {
 app.get('/todos', authenticateUser, async (req, res) => {
 
     try {
-        var todos = await Todo.find({ _creator: req.user._id });
+        var category = req.query['category'];
+        var todos;
+        if (category) {
+            todos = await Todo.find({ _creator: req.user._id, category });
+        } else {
+            todos = await Todo.find({ _creator: req.user._id });
+        }
+
         res.send({ todos });
     } catch (error) {
         res.status(400)
@@ -119,11 +146,11 @@ app.patch('/todos/:id', authenticateUser, async (req, res) => {
 app.post('/users', async (req, res) => {
     var body = _.pick(req.body, ['email', 'password']);
     var user = User(body);
-    user.roles = user.roles.concat([{_id:"5ba4ffd30beaa26ba6e744d6",name:"ROLE_USER"}]);
+    user.roles = user.roles.concat([{ _id: "5ba4ffd30beaa26ba6e744d6", name: "ROLE_USER" }]);
     try {
         await user.save();
         var token = await user.generateAuthToken();
-        res.status(200).header('x-auth', token).send(user);
+        res.status(200).header('x-auth', token).send({ user, token });
     } catch (error) {
         res.status(400).send(error);
     }
@@ -140,7 +167,7 @@ app.post('/users/login', async (req, res) => {
     try {
         var user = await User.findByCredentials(email, password);
         var token = await user.generateAuthToken();
-        res.status(200).header('x-auth', token).send(user);
+        res.status(200).header('x-auth', token).send({ user, token });
     } catch (error) {
         res.status(400).send(error);
     }
@@ -161,6 +188,20 @@ app.get('/users', authenticateADMIN, async (req, res) => {
         var users = await User.find();
         res.send({ users });
     } catch (error) {
+        res.status(400)
+            .send(error);
+    }
+});
+
+app.get('/statistics', authenticateUser, async (req, res) => {
+
+    try {
+        
+        var stats = await statistics(req.user);
+        res.status(200).send(stats);
+
+    } catch (error) {
+        console.log('erroor', error);
         res.status(400)
             .send(error);
     }

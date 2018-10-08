@@ -12,15 +12,24 @@ var todoSchema = new Schema({
         type: Boolean,
         default: false
     },
+    createdAt: {
+        type: Number,
+        default: new Date().getTime()
+    },
     completedAt: {
         type: Number
     },
-    _creator:{
+    _creator: {
         type: mongoose.Schema.Types.ObjectId,
-        required:true
+        required: true
+    },
+    category: {
+        type: String,
+        enum: ['Sport', 'Shopping','Learning','Cooking','Work','Other'],
+        default:'Other'
     }
 });
 
-var Todo = mongoose.model('Todo',todoSchema);
+var Todo = mongoose.model('Todo', todoSchema);
 
-module.exports={Todo};
+module.exports = { Todo };

@@ -5,6 +5,7 @@ const { ObjectID } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
 
+const date = new Date().getTime();
 const userOneId = new ObjectID();
 const userTwoId = new ObjectID();
 
@@ -59,7 +60,8 @@ var todos = [
     {
         _id: new ObjectID(),
         text: "the todo 2",
-        completedAt: 254212,
+        completedAt: date,
+        completed:true,
         _creator:userTwoId
     }
 ];
@@ -82,7 +84,7 @@ const populateUsers = (done) => {
 
 
 
-module.exports = { todos, populate,users,populateUsers }
+module.exports = {date, todos, populate,users,populateUsers }
 
 
 // afterEach((done) => {

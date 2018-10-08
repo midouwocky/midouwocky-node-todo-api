@@ -5,8 +5,9 @@ const { ObjectID } = require('mongodb');
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
 const { User } = require('./../models/user');
+const { statistics } = require('./../utils/statistics');
 
-const { todos, populate, populateUsers, users } = require('./seed/seed');
+const { date,todos, populate, populateUsers, users } = require('./seed/seed');
 
 beforeEach(populateUsers);
 beforeEach(populate);
@@ -24,7 +25,7 @@ describe('server tests', () => {
             request(app)
                 .post('/todos')
                 .send({ text })
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
                 .expect((res) => {
 
@@ -46,7 +47,7 @@ describe('server tests', () => {
             request(app)
                 .post('/todos')
                 .send({})
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(400)
                 .end((err, res) => {
                     if (err) {
@@ -66,7 +67,7 @@ describe('server tests', () => {
         it('should get the todos list ', (done) => {
             request(app)
                 .get('/todos')
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
                 .expect((res) => {
                     expect(res.body.todos.length).toBe(1);
@@ -79,7 +80,7 @@ describe('server tests', () => {
 
             request(app)
                 .get(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
                 .expect((res) => {
 
@@ -90,7 +91,7 @@ describe('server tests', () => {
             var id = todos[0]._id.toHexString();
             request(app)
                 .get(`/todos/${id}`)
-                .set('x-auth',users[1].tokens[0].token)
+                .set('x-auth', users[1].tokens[0].token)
                 .expect(401)
                 .end(done);
 
@@ -100,7 +101,7 @@ describe('server tests', () => {
             var id = new ObjectID().toHexString();
             request(app)
                 .get(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
 
@@ -111,13 +112,13 @@ describe('server tests', () => {
             var id = 'invalidID';
             request(app)
                 .get(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
 
         });
 
-        
+
     });
     describe('delete todos/:id test', () => {
         it('should delete a specific todo ', (done) => {
@@ -125,7 +126,7 @@ describe('server tests', () => {
 
             request(app)
                 .delete(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
                 .expect((res) => {
                     expect(res.body.todo.text).toBe(todos[0].text);
@@ -147,7 +148,7 @@ describe('server tests', () => {
             var id = todos[0]._id.toHexString();
             request(app)
                 .delete(`/todos/${id}`)
-                .set('x-auth',users[1].tokens[0].token)
+                .set('x-auth', users[1].tokens[0].token)
                 .expect(401)
                 .end(done);
 
@@ -157,7 +158,7 @@ describe('server tests', () => {
             var id = new ObjectID().toHexString();
             request(app)
                 .delete(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
 
@@ -168,7 +169,7 @@ describe('server tests', () => {
             var id = 'invalidID';
             request(app)
                 .delete(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
 
@@ -186,7 +187,7 @@ describe('server tests', () => {
 
             request(app)
                 .patch(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .send(body)
                 .expect(200)
                 .expect((res) => {
@@ -219,7 +220,7 @@ describe('server tests', () => {
 
             request(app)
                 .patch(`/todos/${id}`)
-                .set('x-auth',users[1].tokens[0].token)
+                .set('x-auth', users[1].tokens[0].token)
                 .send(body)
                 .expect(200)
                 .expect((res) => {
@@ -246,7 +247,7 @@ describe('server tests', () => {
             var id = todos[0]._id.toHexString();
             request(app)
                 .patch(`/todos/${id}`)
-                .set('x-auth',users[1].tokens[0].token)
+                .set('x-auth', users[1].tokens[0].token)
                 .expect(401)
                 .end(done);
 
@@ -256,7 +257,7 @@ describe('server tests', () => {
             var id = new ObjectID().toHexString();
             request(app)
                 .patch(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
 
@@ -266,7 +267,7 @@ describe('server tests', () => {
             var id = 'invalidID';
             request(app)
                 .patch(`/todos/${id}`)
-                .set('x-auth',users[0].tokens[0].token)
+                .set('x-auth', users[0].tokens[0].token)
                 .expect(404)
                 .end(done);
         });
@@ -279,7 +280,6 @@ describe('server tests', () => {
                 .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
                 .expect((res) => {
-                    expect(res.body._id).toBe(users[0]._id.toHexString());
                     expect(res.body.email).toBe(users[0].email)
                 })
                 .end(done);
@@ -304,9 +304,9 @@ describe('server tests', () => {
                 .send({ email, password })
                 .expect(200)
                 .expect((res) => {
-                    expect(res.body._id).toBeDefined();
+                    expect(res.body.token).toBeDefined();
                     expect(res.headers['x-auth']).toBeDefined();
-                    expect(res.body.email).toBe(email);
+                    expect(res.body.user.email).toBe(email);
                 })
                 .end((err, res) => {
                     if (err) {
@@ -371,7 +371,7 @@ describe('server tests', () => {
 
     describe('Post /users/login test', () => {
 
-        it('should return an error if credentials are wrong', (done) => {
+        it('should login user and return token', (done) => {
             var email = users[1].email;
             var password = users[1].password;
 
@@ -380,9 +380,9 @@ describe('server tests', () => {
                 .send({ email, password })
                 .expect(200)
                 .expect((res) => {
-                    expect(res.body._id).toBeDefined();
                     expect(res.headers['x-auth']).toBeDefined();
-                    expect(res.body.email).toBe(email);
+                    expect(res.body['token']).toBeDefined();
+                    expect(res.body['user'].email).toBe(email);
                 })
                 .end((err, res) => {
                     if (err) {
@@ -401,7 +401,7 @@ describe('server tests', () => {
                         })
                 });
         });
-        it('should login user and return token', (done) => {
+        it('should return an error if credentials are wrong', (done) => {
 
             var email = 'try@gmail.com';
             var password = 'falsePass123';
@@ -457,7 +457,7 @@ describe('server tests', () => {
                 .get('/users')
                 .set('x-auth', users[0].tokens[0].token)
                 .expect(200)
-                .expect((res)=>{
+                .expect((res) => {
                     expect(res.body.users).toBeTruthy();
                     expect(res.body.users.length).toBe(2);
                 })
@@ -468,11 +468,45 @@ describe('server tests', () => {
                 .get('/users')
                 .set('x-auth', users[1].tokens[0].token)
                 .expect(401)
-                .expect((res)=>{
+                .expect((res) => {
                     expect(res.body.users).toBeFalsy();
                 })
                 .end(done);
         });
     });
 
+    describe('statistics function', () => {
+        it('should calculate statistics for user', (done) => {
+            statistics(users[1]).then(stats => {
+                expect(stats).toBeTruthy();
+                expect(stats.completed).toBe(1);
+                expect(stats.nonCompleted).toBe(0);
+                expect(stats.total).toBe(1);
+                expect(stats.statistics[0].todos.length).toBe(1);
+                expect(stats.statistics[0].completedTodos.length).toBe(1);
+                expect(stats.statistics[0].categoriesStats[5].count).toBe(1);
+                
+                
+                done();
+            }).catch(error => {
+                done(error);
+            });
+        });
+
+
+    });
+
+    describe('get statistics', () => {
+        it('should return statistics for user 1', (done) => {
+            request(app)
+                .get('/statistics')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body.total).toBe(1);
+                    expect(res.body.completed).toBe(0);
+                })
+                .end(done);
+        });
+    });
 });
